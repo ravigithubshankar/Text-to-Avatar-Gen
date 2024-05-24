@@ -1,8 +1,8 @@
-transformers==4.40.0
-datasets==2.19.1
+transformers
+datasets
 pillow
-numpy==1.26.4
-torch==2.3.0
-torchvision==0.16.0
+numpy
+torch
+torchvision
 streamlit
-diffusers==0.11.0
+diffusers
