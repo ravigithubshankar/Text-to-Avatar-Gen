@@ -9,10 +9,8 @@ def query_stabilitydiff(payload, headers):
     return response.content
 
 with st.sidebar:
-    
-
-st.title("💬 Chatbot - Text to Image Gen")
-st.caption("🚀 A Streamlit chatbot powered by Strom")
+    st.title("💬 Chatbot - Text to Image Gen")
+    st.caption("🚀 A Streamlit chatbot powered by Strom")
 
 if "messages" not in st.session_state:
     st.session_state["messages"] = [
