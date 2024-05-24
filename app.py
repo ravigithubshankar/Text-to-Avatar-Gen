@@ -1,5 +1,5 @@
 import streamlit as st
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoProcessor
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoProcessor,AutoModel
 import torch
 import urllib
 import PIL.Image
@@ -7,8 +7,7 @@ import io
 
 st.title("Image Generation with OpenGPT 4o")
 
-# Load the model and processor
-model = AutoModelForCausalLM.from_pretrained("unum-cloud/uform-gen2-dpo", trust_remote_code=True)
+model3 = AutoModel.from_pretrained("unum-cloud/uform-gen2-dpo", trust_remote_code=True)
 processor = AutoProcessor.from_pretrained("unum-cloud/uform-gen2-dpo", trust_remote_code=True)
 
 # Function to generate images
