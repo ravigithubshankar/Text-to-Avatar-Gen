@@ -50,3 +50,5 @@ if st.button("Generate Image"):
             st.write(generated_text)
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
+
+
