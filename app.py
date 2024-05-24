@@ -9,7 +9,7 @@ def query_stabilitydiff(payload, headers):
     return response.content
 
 with st.sidebar:
-    ]
+    
 
 st.title("💬 Chatbot - Text to Image Gen")
 st.caption("🚀 A Streamlit chatbot powered by Strom")
