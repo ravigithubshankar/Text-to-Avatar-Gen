@@ -1,35 +1,53 @@
 import streamlit as st
-from transformers import pipeline
-from diffusers import StableDiffusionPipeline
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoProcessor
 import torch
-from PIL import Image
+import urllib
+import PIL.Image
 import io
 
-# Set up the Streamlit app layout
-st.title("Image Generation with Stable Diffusion")
-st.write("Enter a text prompt and generate an image using Stable Diffusion")
+st.title("Image Generation with OpenGPT 4o")
 
-# Input text prompt from the user
-prompt = st.text_input("Text Prompt", "A futuristic cityscape with towering skyscrapers and flying cars")
+# Load the model and processor
+model = AutoModelForCausalLM.from_pretrained("unum-cloud/uform-gen2-dpo", trust_remote_code=True)
+processor = AutoProcessor.from_pretrained("unum-cloud/uform-gen2-dpo", trust_remote_code=True)
 
-# Button to generate the image
+# Function to generate images
+def generate_image(prompt, image_url):
+    inputs = processor(text=[prompt], images=[image_url], return_tensors="pt")
+    with torch.inference_mode():
+        output = model.generate(
+            **inputs,
+            do_sample=False,
+            use_cache=True,
+            max_new_tokens=256,
+            eos_token_id=151645,
+            pad_token_id=processor.tokenizer.pad_token_id
+        )
+
+    prompt_len = inputs["input_ids"].shape[1]
+    decoded_text = processor.batch_decode(output[:, prompt_len:])[0]
+    if decoded_text.endswith(""):
+        decoded_text = decoded_text[:-10]
+    
+    return decoded_text
+
+# UI components
+prompt = st.text_input("Enter prompt:", "Describe the image you want to generate")
+image_url = st.text_input("Enter image URL:", "")
+
 if st.button("Generate Image"):
-    # Load the Stable Diffusion model
-    model_id = "CompVis/stable-diffusion-v1-4"
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    pipe = StableDiffusionPipeline.from_pretrained(model_id).to(device)
+    if not prompt or not image_url:
+        st.error("Please provide both a prompt and an image URL.")
+    else:
+        try:
+            # Download and display the image
+            image_data = urllib.request.urlopen(image_url).read()
+            image = PIL.Image.open(io.BytesIO(image_data))
+            st.image(image, caption='Input Image', use_column_width=True)
 
-    # Generate the image
-    with torch.no_grad():
-        image = pipe(prompt, guidance_scale=7.5).images[0]
-
-    # Convert the image to a format Streamlit can display
-    buffered = io.BytesIO()
-    image.save(buffered, format="JPEG")
-    img_str = buffered.getvalue()
-
-    # Display the image
-    st.image(img_str, caption="Generated Image", use_column_width=True)
-
-# Display footer
-st.write("Powered by Streamlit and Stable Diffusion")
+            # Generate and display the image description
+            generated_text = generate_image(prompt, image_url)
+            st.write("Generated Image Description:")
+            st.write(generated_text)
+        except Exception as e:
+            st.error(f"An error occurred: {str(e)}")
