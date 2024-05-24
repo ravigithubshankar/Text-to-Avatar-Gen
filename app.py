@@ -1,54 +1,53 @@
 import streamlit as st
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoProcessor,AutoModel
-import torch
-import urllib
-import PIL.Image
+import requests
 import io
+from PIL import Image
 
-st.title("text-to-image generation")
+def query_stabilitydiff(payload, headers):
+    API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+    response = requests.post(API_URL, headers=headers, json=payload)
+    return response.content
 
-model3 = AutoModel.from_pretrained("unum-cloud/uform-gen2-dpo", trust_remote_code=True)
-processor = AutoProcessor.from_pretrained("unum-cloud/uform-gen2-dpo", trust_remote_code=True)
+with st.sidebar:
+    ]
 
-# Function to generate images
-def generate_image(prompt, image_url):
-    inputs = processor(text=[prompt], images=[image_url], return_tensors="pt")
-    with torch.inference_mode():
-        output = model.generate(
-            **inputs,
-            do_sample=False,
-            use_cache=True,
-            max_new_tokens=256,
-            eos_token_id=151645,
-            pad_token_id=processor.tokenizer.pad_token_id
-        )
+st.title("💬 Chatbot - Text to Image Gen")
+st.caption("🚀 A Streamlit chatbot powered by Strom")
 
-    prompt_len = inputs["input_ids"].shape[1]
-    decoded_text = processor.batch_decode(output[:, prompt_len:])[0]
-    if decoded_text.endswith(""):
-        decoded_text = decoded_text[:-10]
-    
-    return decoded_text
+if "messages" not in st.session_state:
+    st.session_state["messages"] = [
+        {"role": "assistant", "content": "What kind of image that I need to draw? (example: running cat)"}]
 
-# UI components
-prompt = st.text_input("Enter prompt:", "Describe the image you want to generate")
-image_url = st.text_input("Enter image URL:", "")
+for message in st.session_state.messages:
+    st.chat_message(message["role"]).write(message["content"])
+    if "image" in message:
+        st.chat_message("assistant").image(message["image"], caption=message["prompt"], use_column_width=True)
 
-if st.button("Generate Image"):
-    if not prompt or not image_url:
-        st.error("Please provide both a prompt and an image URL.")
-    else:
-        try:
-            # Download and display the image
-            image_data = urllib.request.urlopen(image_url).read()
-            image = PIL.Image.open(io.BytesIO(image_data))
-            st.image(image, caption='Input Image', use_column_width=True)
+if prompt := st.chat_input():
 
-            # Generate and display the image description
-            generated_text = generate_image(prompt, image_url)
-            st.write("Generated Image Description:")
-            st.write(generated_text)
-        except Exception as e:
-            st.error(f"An error occurred: {str(e)}")
+    if not st.secrets.hugging_face_token.api_key:
+        st.info("Please add your Hugging Face Token to continue.")
+        st.stop()
+
+    # Input prompt
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.chat_message("user").write(prompt)
+
+    # Query Stable Diffusion
+    headers = {"Authorization": f"Bearer {st.secrets.hugging_face_token.api_key}"}
+    image_bytes = query_stabilitydiff({
+        "inputs": prompt,
+    }, headers)
+
+    # Return Image
+    image = Image.open(io.BytesIO(image_bytes))
+    msg = f'here is your image related to "{prompt}"'
+
+    # Show Result
+    st.session_state.messages.append({"role": "assistant", "content": msg, "prompt": prompt, "image": image})
+    st.chat_message("assistant").write(msg)
+    st.chat_message("assistant").image(image, caption=prompt, use_column_width=True)
+
+
 
 
