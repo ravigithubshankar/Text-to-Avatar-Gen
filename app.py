@@ -23,9 +23,13 @@ for message in st.session_state.messages:
 
 if prompt := st.chat_input():
 
-    if not st.secrets.hugging_face_token.api_key:
-        st.info("Please add your Hugging Face Token to continue.")
+    if not isinstance(st.secrets.hugging_face_token, dict):
+        st.info("Your Hugging Face Token configuration seems incorrect. Please check your secrets setup.")
         st.stop()
+    elif "api_key" not in st.secrets.hugging_face_token:
+        st.info("Please add your Hugging Face Token API key to continue.")
+        st.stop()
+
 
     # Input prompt
     st.session_state.messages.append({"role": "user", "content": prompt})
